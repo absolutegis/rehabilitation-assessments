@@ -4,6 +4,14 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
 
+# Helper function to style "Good" and "Bad" cells
+def highlight_good_bad(val):
+    if val == "good":
+        return "background-color: rgba(0, 255, 0, 0.2);"  # Semi-transparent green
+    elif val == "bad":
+        return "background-color: rgba(255, 0, 0, 0.2);"  # Semi-transparent red
+    return ""  # No style
+
 # Streamlit App
 st.title("RCW 87.84 Rehabilitation Assessments QA/QC")
 
@@ -43,21 +51,19 @@ if uploaded_file:
     st.subheader("Summary Table")
     st.dataframe(summary_df)
     
-    # Visualization
-    #st.subheader("Good vs. Bad Points by Category")
-    #fig, ax = plt.subplots()
-    #summary_df.set_index("Category")[["Good", "Bad"]].plot(kind="bar", ax=ax)
-    #ax.set_ylabel("Count")
-    #ax.set_title("Good vs. Bad Points")
-    #st.pyplot(fig)
-    
     # Identify Records with Multiple "Bad" Categories
     st.subheader("Records with Multiple 'Bad' Categories")
     bad_columns = [column for column in categories.values()]
     data["Bad_Count"] = data[bad_columns].apply(lambda row: sum(row == "bad"), axis=1)
     multiple_bad_records = data[data["Bad_Count"] > 1]
     st.write(f"Total Records with Multiple 'Bad' Categories: {multiple_bad_records.shape[0]}")
-    st.dataframe(multiple_bad_records)
+
+    # Display only "Bad" records with highlighting
+    styled_multiple_bad = multiple_bad_records.style.applymap(
+        highlight_good_bad,
+        subset=bad_columns
+    )
+    st.dataframe(styled_multiple_bad, use_container_width=True)
 
     # Breakdown of "Bad" Reasons
     st.subheader("Breakdown of 'Bad' Reasons")
@@ -73,10 +79,14 @@ if uploaded_file:
     selected_category = st.selectbox("Filter by Category", ["All"] + list(categories.keys()))
     if selected_category != "All":
         filtered_data = data[data[categories[selected_category]] == "bad"]
+        styled_filtered = filtered_data.style.applymap(
+            highlight_good_bad,
+            subset=[categories[selected_category]]
+        )
+        st.dataframe(styled_filtered, use_container_width=True)
     else:
-        filtered_data = data
-
-    st.dataframe(filtered_data)
+        # Show unstyled full detailed table for performance
+        st.dataframe(data, use_container_width=True)
 
     # Summary Statistics for "Bad" Data
     st.subheader("Summary Statistics for 'Bad' Data")
@@ -95,4 +105,4 @@ if uploaded_file:
     # Detailed Table (Optional)
     st.subheader("Detailed Data (Optional)")
     with st.expander("View Detailed Table"):
-        st.dataframe(data)
+        st.dataframe(data, use_container_width=True)  # Unstyled full table for performance
