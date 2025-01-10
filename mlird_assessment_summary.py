@@ -44,14 +44,55 @@ if uploaded_file:
     st.dataframe(summary_df)
     
     # Visualization
-    st.subheader("Good vs. Bad Points by Category")
-    fig, ax = plt.subplots()
-    summary_df.set_index("Category")[["Good", "Bad"]].plot(kind="bar", ax=ax)
-    ax.set_ylabel("Count")
-    ax.set_title("Good vs. Bad Points")
-    st.pyplot(fig)
+    #st.subheader("Good vs. Bad Points by Category")
+    #fig, ax = plt.subplots()
+    #summary_df.set_index("Category")[["Good", "Bad"]].plot(kind="bar", ax=ax)
+    #ax.set_ylabel("Count")
+    #ax.set_title("Good vs. Bad Points")
+    #st.pyplot(fig)
     
+    # Identify Records with Multiple "Bad" Categories
+    st.subheader("Records with Multiple 'Bad' Categories")
+    bad_columns = [column for column in categories.values()]
+    data["Bad_Count"] = data[bad_columns].apply(lambda row: sum(row == "bad"), axis=1)
+    multiple_bad_records = data[data["Bad_Count"] > 1]
+    st.write(f"Total Records with Multiple 'Bad' Categories: {multiple_bad_records.shape[0]}")
+    st.dataframe(multiple_bad_records)
+
+    # Breakdown of "Bad" Reasons
+    st.subheader("Breakdown of 'Bad' Reasons")
+    bad_breakdown = {
+        category: data[data[column] == "bad"].shape[0]
+        for category, column in categories.items()
+    }
+    bad_breakdown_df = pd.DataFrame(list(bad_breakdown.items()), columns=["Category", "Bad Count"])
+    st.dataframe(bad_breakdown_df)
+
+    # Filter the Detailed Table
+    st.subheader("Filter the Detailed Table")
+    selected_category = st.selectbox("Filter by Category", ["All"] + list(categories.keys()))
+    if selected_category != "All":
+        filtered_data = data[data[categories[selected_category]] == "bad"]
+    else:
+        filtered_data = data
+
+    st.dataframe(filtered_data)
+
+    # Summary Statistics for "Bad" Data
+    st.subheader("Summary Statistics for 'Bad' Data")
+    total_bad_records = data["Bad_Count"].sum()
+    multiple_issues_count = multiple_bad_records.shape[0]
+    st.write(f"Total 'Bad' Records: {total_bad_records}")
+    st.write(f"Records with Multiple Issues: {multiple_issues_count}")
+
+    # Visualization of "Bad" Reasons
+    st.subheader("Visualization of 'Bad' Counts by Category")
+    fig, ax = plt.subplots()
+    bad_breakdown_df.plot(kind="bar", x="Category", y="Bad Count", ax=ax, legend=False)
+    ax.set_ylabel("Bad Count")
+    st.pyplot(fig)
+
     # Detailed Table (Optional)
     st.subheader("Detailed Data (Optional)")
     with st.expander("View Detailed Table"):
-        st.dataframe(data) 
+        st.dataframe(data)
